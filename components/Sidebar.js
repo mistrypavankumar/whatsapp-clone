@@ -14,7 +14,7 @@ const Sidebar = () => {
   const [user] = useAuthState(auth);
   const userChatRef = db
     .collection("chats")
-    .where("users", "already-contains", user.email);
+    .where("users", "array-contains", user.email);
 
   const [chatsSnapshot] = useCollection(userChatRef);
 
@@ -38,14 +38,15 @@ const Sidebar = () => {
   };
 
   const chatAlreadyExits = (recipientEmail) =>
-    !!chatsSnapshot?.docs.find((chat) =>
-      chat.data().user.find((user) => user === recipientEmail?.length > 0)
+    !!chatsSnapshot?.docs.find(
+      (chat) =>
+        chat.data().users.find((user) => user === recipientEmail)?.length > 0
     );
 
   return (
     <Container>
       <Header>
-        <UseAvatar onClick={() => auth.signOut()} />
+        <UseAvatar src={user.photoURL} onClick={() => auth.signOut()} />
         <IconContainer>
           <IconButton>
             <ChatIcon />
@@ -61,9 +62,9 @@ const Sidebar = () => {
       </Search>
       <SidebarButton onClick={createChat}>Start a new chat</SidebarButton>
 
-      {/* {chatsSnapshot?.docs.map((chat) => (
-        <Chat key={chat.id} id={chat.id} user={chat.data().user} />
-      ))} */}
+      {chatsSnapshot?.docs.map((chat) => (
+        <Chat key={chat.id} id={chat.id} users={chat.data().users} />
+      ))}
     </Container>
   );
 };
