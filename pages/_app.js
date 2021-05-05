@@ -15,10 +15,10 @@ function MyApp({ Component, pageProps }) {
         {
           email: user.email,
           lastSeen: firebase.firestore.FieldValue.serverTimestamp(),
-          photoUrl: user.photoURL,
+          photoURL: user.photoURL,
         },
         {
-          merge: true,
+          marge: true,
         }
       );
     }
