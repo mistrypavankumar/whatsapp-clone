@@ -1,4 +1,5 @@
 import { Avatar, IconButton } from "@material-ui/core";
+import { useState } from "react";
 import MoreVertIcon from "@material-ui/icons/MoreVert";
 import AttachFileIcon from "@material-ui/icons/AttachFile";
 import { useRouter } from "next/router";
@@ -8,13 +9,17 @@ import { auth, db } from "../firebase";
 import { useCollection } from "react-firebase-hooks/firestore";
 import Message from "./Message";
 import InsertEmoticonIcon from "@material-ui/icons/InsertEmoticon";
+import MicIcon from "@material-ui/icons/Mic";
+import firebase from "firebase";
+import getRecipientEmail from "../utils/getRecipientEmail";
 
 const ChatScreen = ({ chat, messages }) => {
   const [user] = useAuthState(auth);
+  const [input, setInput] = useState("");
   const router = useRouter();
   const [messagesSnapshot] = useCollection(
     db
-      .collection("chat")
+      .collection("chats")
       .doc(router.query.id)
       .collection("messages")
       .orderBy("timestamp", "asc")
@@ -22,25 +27,52 @@ const ChatScreen = ({ chat, messages }) => {
 
   const showMessages = () => {
     if (messagesSnapshot) {
-      return messagesSnapshot.docs.map((messages) => (
+      return messagesSnapshot.docs.map((message) => (
         <Message
-          key={messages.id}
-          user={messages.data().user}
+          key={message.id}
+          user={message.data().user}
           message={{
             ...message.data(),
             timestamp: message.data().timestamp?.toDate().getTime(),
           }}
         />
       ));
+    } else {
+      return JSON.parse(messages).map((message) => (
+        <Message key={message.id} user={message.user} message={message} />
+      ));
     }
   };
+
+  const sendMessage = (e) => {
+    e.preventDefault();
+
+    // update the last seen
+    db.collection("users").doc(user.uid).set(
+      {
+        lastSeen: firebase.firestore.FieldValue.serverTimestamp(),
+      },
+      { merge: true }
+    );
+
+    db.collection("chats").doc(router.query.id).collection("messages").add({
+      timestamp: firebase.firestore.FieldValue.serverTimestamp(),
+      message: input,
+      user: user.email,
+      photoURL: user.photoURL,
+    });
+
+    setInput("");
+  };
+
+  const recipientEmail = getRecipientEmail(chat.users, user);
 
   return (
     <Container>
       <Header>
         <Avatar />
         <HeaderInformation>
-          <h3>Ref Email</h3>
+          <h3>{recipientEmail}</h3>
           <p>Last seen...</p>
         </HeaderInformation>
         <HeaderIcons>
@@ -59,7 +91,11 @@ const ChatScreen = ({ chat, messages }) => {
       </MessageContainer>
       <InputContainer>
         <InsertEmoticonIcon />
-        <Input />
+        <Input value={input} onChange={(e) => setInput(e.target.value)} />
+        <button hidden disabled={!input} type="submit" onClick={sendMessage}>
+          Send Message
+        </button>
+        <MicIcon />
       </InputContainer>
     </Container>
   );
@@ -93,7 +129,11 @@ const HeaderInformation = styled.div`
   }
 `;
 const HeaderIcons = styled.div``;
-const MessageContainer = styled.div``;
+const MessageContainer = styled.div`
+  padding: 30px;
+  background-color: #e5ded8;
+  min-height: 90vh;
+`;
 const EndOfMessage = styled.div``;
 const InputContainer = styled.form`
   display: flex;
