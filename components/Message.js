@@ -3,7 +3,7 @@ import styled from "styled-components";
 const Message = ({ user, message }) => {
   return (
     <Container>
-      <p>{message}</p>
+      <p>{message.message}</p>
     </Container>
   );
 };
